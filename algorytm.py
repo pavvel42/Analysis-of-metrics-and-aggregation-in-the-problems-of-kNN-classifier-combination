@@ -1,4 +1,3 @@
-from datetime import datetime
 import random
 from sklearn.svm import SVR
 from sklearn.feature_selection import RFECV
@@ -7,9 +6,7 @@ import numpy as np
 from Classifier import Classifier
 # pip freeze > requirements.txt
 
-metricList = ('euclidean', 'manhattan', 'chebyshev', 'hamming', 'canberra', 'braycurtis', 'seuclidean')
-# seuclidean działa chodziaż nie podaje args V, pewnie ma ustawiony jakiś default
-metricListNotWorking = ('minkowski', 'wminkowski', 'mahalanobis')  # przez brak podania dodatkowych parametrów
+metricList = ['euclidean', 'manhattan', 'chebyshev', 'hamming', 'canberra', 'braycurtis']
 # https://scikit-learn.org/stable/modules/generated/sklearn.neighbors.KNeighborsClassifier.html
 
 T = pd.read_csv("data/colonTumor.csv")
@@ -20,17 +17,15 @@ y = np.where(y == 'negative', 0, 1)
 kNNDict = {}
 
 
-def count_time(info, start):
-    timestamp = datetime.timestamp(start)
-    elapsed_time = datetime.timestamp(datetime.now()) - timestamp
-    print(info, " elapsed_time = ", datetime.fromtimestamp(elapsed_time).minute, ' min')
-
-
-def algorytm(X, y, k=3, s=5, t=0.5, p=2):
-    start = datetime.now()
+def algorytm(X, y, k=3, s=5, t=0.5, p=[2]):
     for metric in metricList:
-        kNN = Classifier(n_neighbors=k, metric=metric, p=p)
+        kNN = Classifier(n_neighbors=k, metric=metric, p=None)
         kNNDict[metric] = kNN
+
+    for i in p:
+        metricList.append('minkowski' + str(i))
+        kNN = Classifier(n_neighbors=k, metric='minkowski', p=i)
+        kNNDict['minkowski' + str(i)] = kNN
     # print(kNNDict)
 
     for i in range(s):
@@ -42,7 +37,6 @@ def algorytm(X, y, k=3, s=5, t=0.5, p=2):
         print(y)
         for metric in metricList:
             kNNDict[metric].fit(selector=selector, y=y)
-    count_time('End RFECV ', start)
 
     for metric in metricList:
         kNNDict[metric].info()
@@ -50,7 +44,6 @@ def algorytm(X, y, k=3, s=5, t=0.5, p=2):
         kNNDict[metric].aggregation_quadratic(t=t, y=y)
         kNNDict[metric].aggregation_harmonic(t=t, y=y)
         kNNDict[metric].aggregation_geometric(t=t, y=y)
-    count_time('End score ', start)
 
 
-algorytm(X=X, y=y)
+algorytm(X=X, y=y, p=[1, 2, 3, 4])
