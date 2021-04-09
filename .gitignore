@@ -1,5 +1,5 @@
 .idea
 .vscode
-SVRlinear.csv
+SVR_linear.csv
 /data
 __pycache__
