@@ -19,15 +19,15 @@ y = T.iloc[:, 0]
 y = np.where(y == 'negative', 0, 1)
 y = LabelEncoder().fit_transform(y)
 
-# metricList = ['euclidean', 'manhattan', 'chebyshev', 'hamming', 'canberra', 'braycurtis']
-metricList = ['euclidean']
+metricList = ['euclidean', 'manhattan', 'chebyshev', 'hamming', 'canberra', 'braycurtis']
+# metricList = ['euclidean']
 models = []
-kl = [3]
-# sl = [5, 10, 20]
-sl = [1]
+kl = [3, 5, 7]
+# sl = [1]
+sl = [5, 10, 20]
 pl = [1.5, 3, 5, 10, 20]
 estimator = SVR(kernel="linear")
-skf = StratifiedKFold(n_splits=2)
+skf = StratifiedKFold(n_splits=10)
 skf.get_n_splits(X, y)
 
 
@@ -39,11 +39,13 @@ def create_models():
                 for metric in metricList:
                     models.append(
                         Model(n_neighbors=k, metric=metric, s=s, t=0.5, aggregation=i, RFECVestimator=estimator))
-            # for i in range(1, 5):
-            #     for p in pl:
-            #         models.append(Model(n_neighbors=k, metric="minkowski", s=s, t=0.5, aggregation=i, RFECVestimator=estimator, p=p))
+            for i in range(1, 5):
+                for p in pl:
+                    models.append(
+                        Model(n_neighbors=k, metric="minkowski", s=s, t=0.5, aggregation=i, RFECVestimator=estimator,
+                              p=p))
     end = timer()
-    print('Time create_models: ', end - start, 'Ilosc modeli: ', len(models))
+    print('Time create_models: ', end - start, 'Amount of models: ', len(models))
     for model in models:
         model.info()
 
@@ -60,14 +62,14 @@ def pred_models():
             count_model += 1
             model.pred(X_train, y_train)
             model.score(X_test, y_test)
-            print("Pozostało ", len(models) - count_model, " modeli")
-        print("SKF:", iter)
+            print("Left ", len(models) - count_model, " models")
+        print("Iteration StratifiedKFold: ", iter)
     end = timer()
     print('Time pred_models: ', end - start)
     for model in models:
         model.info()
         model.get_result()
-        write_to_csv("SVR_linear.csv", model.result_to_file())
+        write_to_csv("SVR_linear_komputer.csv", model.result_to_file())
 
 
 def write_to_csv(filename, result):
@@ -89,7 +91,7 @@ def write_to_csv(filename, result):
                       'RFECV_step', 'meanAUC', 'stdevAUC', 'meanACCURACY', 'stdevACCURACY', 'stdevACCURACY', 'Date']
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
         writer.writerow(result)
-    print('Zapisano plik ', filename)
+    print('Save file: ', filename)
 
 
 create_models()

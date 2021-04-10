@@ -1,15 +1,8 @@
 from statistics import stdev
-
 from sklearn.feature_selection import RFECV
 from sklearn.neighbors import KNeighborsClassifier
-from sklearn.metrics import confusion_matrix
 from sklearn.metrics import accuracy_score
-from sklearn.metrics import precision_score
-from sklearn.metrics import recall_score
-from sklearn.metrics import f1_score
 from sklearn.metrics import roc_auc_score
-from sklearn.metrics import roc_curve
-# https://scikit-learn.org/stable/modules/classes.html#module-sklearn.metrics
 import numpy as np
 from agregacje import amean  # Arithmetic
 from agregacje import qmean  # Quadratic
@@ -51,26 +44,21 @@ class Model:
               f"meanACC: {np.mean(self.accs)} stdevACC: {stdev(self.accs)}")
 
     def pred(self, X, y):
-        # definiowanie modelu KNN dla k sąsiadów
-        rfemodels = []
-        knnmodels = []
+        rfemodels, knnmodels = []
         for x in range(self.s):  # kłopot z losowanie tym samych tabel z s>1
             selector = RFECV(self.RFECVestimator, min_features_to_select=self.RFECV_min_n_features, step=self.RFECVstep,
                              n_jobs=-1)
             sample = selector.fit_transform(X, y)
             rfemodels.append(selector)
             # print(selector.get_support())
-            # tworzenie podtabeli z wybranymi cechami
-            # new_X = X[:, sample]
             new_X = sample
-            print("tabela:", x + 1, "new_X shape:", new_X.shape, "selected features",
+            print("Table: ", x + 1, "new_X shape:", new_X.shape, "selected features",
                   [i for i, x in enumerate(selector.support_) if x])
-            # budowa klasyfikatora w oparciu o tabelę new_X
             self.kNN.fit(new_X, y)
             knnmodels.append(self.kNN)
         self.knnmodels = knnmodels
         self.rfemodels = rfemodels
-        print("Model created")
+        # print("Model created")
 
     def score(self, X, y):
         pred, pimean = self.predict(X)
