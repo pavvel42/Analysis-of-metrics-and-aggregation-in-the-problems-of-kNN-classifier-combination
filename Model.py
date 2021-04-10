@@ -44,7 +44,8 @@ class Model:
               f"meanACC: {np.mean(self.accs)} stdevACC: {stdev(self.accs)}")
 
     def pred(self, X, y):
-        rfemodels, knnmodels = []
+        rfemodels = []
+        knnmodels = []
         for x in range(self.s):  # kłopot z losowanie tym samych tabel z s>1
             selector = RFECV(self.RFECVestimator, min_features_to_select=self.RFECV_min_n_features, step=self.RFECVstep,
                              n_jobs=-1)

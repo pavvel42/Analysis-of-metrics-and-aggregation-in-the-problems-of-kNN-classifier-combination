@@ -19,12 +19,12 @@ y = T.iloc[:, 0]
 y = np.where(y == 'negative', 0, 1)
 y = LabelEncoder().fit_transform(y)
 
-metricList = ['euclidean', 'manhattan', 'chebyshev', 'hamming', 'canberra', 'braycurtis']
+metricList = ['euclidean', 'manhattan', 'chebyshev', 'canberra', 'braycurtis']
 # metricList = ['euclidean']
 models = []
 kl = [3, 5, 7]
 # sl = [1]
-sl = [5, 10, 20]
+sl = [1]
 pl = [1.5, 3, 5, 10, 20]
 estimator = SVR(kernel="linear")
 skf = StratifiedKFold(n_splits=10)
