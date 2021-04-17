@@ -1,3 +1,4 @@
+import copy
 from statistics import stdev
 from sklearn.feature_selection import RFECV
 from sklearn.neighbors import KNeighborsClassifier
@@ -12,7 +13,7 @@ from agregacje import gmean  # Geometric
 
 class Model:
     def __init__(self, n_neighbors=3, metric='minkowski', p=None, s=1, t=0.5, aggregation=1, RFECVestimator=None,
-                 RFECVstep=1, RFECV_min_n_features=200):
+                 RFECVstep=100, RFECV_min_n_features=200):
         self.n_neighbors = n_neighbors
         self.metric = metric
         self.p = p
@@ -23,8 +24,8 @@ class Model:
         self.RFECVestimator = RFECVestimator
         self.RFECVstep = RFECVstep
         self.RFECV_min_n_features = RFECV_min_n_features
-        self.rfemodels = None
-        self.knnmodels = None
+        self.rfemodels = []
+        self.knnmodels = []
         self.aucs = []
         self.accs = []
 
@@ -43,23 +44,31 @@ class Model:
         print(f"Model meanAUC: {np.mean(self.aucs)} stdevAUC: {stdev(self.aucs)} "
               f"meanACC: {np.mean(self.accs)} stdevACC: {stdev(self.accs)}")
 
-    def pred(self, X, y):
-        rfemodels = []
-        knnmodels = []
-        for x in range(self.s):  # kłopot z losowanie tym samych tabel z s>1
-            selector = RFECV(self.RFECVestimator, min_features_to_select=self.RFECV_min_n_features, step=self.RFECVstep,
-                             n_jobs=-1)
-            sample = selector.fit_transform(X, y)
-            rfemodels.append(selector)
-            # print(selector.get_support())
-            new_X = sample
-            print("Table: ", x + 1, "new_X shape:", new_X.shape, "selected features",
-                  [i for i, x in enumerate(selector.support_) if x])
-            self.kNN.fit(new_X, y)
-            knnmodels.append(self.kNN)
-        self.knnmodels = knnmodels
-        self.rfemodels = rfemodels
-        # print("Model created")
+    def pred(self, X, y, selector, sample, selected_features):
+        # rfemodels = []
+        # knnmodels = []
+        # for x in range(self.s):  # kłopot z losowanie tym samych tabel z s>1
+        #     # selector = RFECV(self.RFECVestimator, min_features_to_select=self.RFECV_min_n_features, step=self.RFECVstep,
+        #     #                  n_jobs=-1)
+        #     # sample = selector.fit_transform(X, y)
+        #     print(sample)
+        #     rfemodels.append(selector)
+        #     # print(selector.get_support())
+        #     new_X = sample
+        #     print("Table: ", x + 1, "new_X shape:", new_X.shape, "selected features",
+        #           [i for i, x in enumerate(selector.support_) if x])
+        #     self.kNN.fit(new_X, y)
+        #     knnmodels.append(self.kNN)
+
+        # print(sample)
+        new_X = sample
+        # rfemodels.append(selector)
+        # print('selected_features ',selected_features)
+
+        copy_knn = copy.deepcopy(self.kNN)
+        copy_knn.fit(new_X, y)
+        self.knnmodels.append(copy_knn)
+        self.rfemodels.append(selected_features)
 
     def score(self, X, y):
         pred, pimean = self.predict(X)
@@ -69,8 +78,9 @@ class Model:
     def predict(self, X):
         pi = []
         pimean = None
-        for x in range(self.s):
-            new_X = self.rfemodels[x].transform(X)
+
+        for x in range(len(self.knnmodels)):
+            new_X = X[:, self.rfemodels[x]]
             prob = self.knnmodels[x].predict_proba(new_X)
             pi.append(prob[:, 1])
         pi = np.array(pi)
