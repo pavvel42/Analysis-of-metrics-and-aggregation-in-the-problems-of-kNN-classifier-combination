@@ -1,6 +1,5 @@
 import copy
 from statistics import stdev
-from sklearn.feature_selection import RFECV
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.metrics import accuracy_score
 from sklearn.metrics import roc_auc_score
@@ -54,7 +53,7 @@ class Model:
         # print(sample)
         new_X = sample
         # rfemodels.append(selector)
-        # print('selected_features ',selected_features)
+        print('count features ', len(selected_features), 'selected_features ', selected_features)
 
         copy_knn = copy.deepcopy(self.kNN)
         copy_knn.fit(new_X, y)
