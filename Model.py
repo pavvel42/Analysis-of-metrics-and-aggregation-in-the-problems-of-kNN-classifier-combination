@@ -12,7 +12,7 @@ from agregacje import gmean  # Geometric
 
 
 class Model:
-    def __init__(self, n_neighbors=3, metric='minkowski', p=None, s=1, t=0.5, aggregation=1, RFECVestimator=None,
+    def __init__(self, n_neighbors=3, metric='minkowski', p=None, s=2, t=0.5, aggregation=1, RFECVestimator=None,
                  RFECVstep=100, RFECV_min_n_features=200):
         self.n_neighbors = n_neighbors
         self.metric = metric
@@ -32,6 +32,12 @@ class Model:
     def get_classifier(self):
         return self.kNN
 
+    def get_estimator(self):
+        return self.RFECVestimator
+
+    def get_s(self):
+        return self.s
+
     def get_aggregation(self, number=1):
         aggregations = ['', 'arithmetic', 'quadratic', 'geometric', 'harmonic']
         return aggregations[number]
@@ -44,22 +50,7 @@ class Model:
         print(f"Model meanAUC: {np.mean(self.aucs)} stdevAUC: {stdev(self.aucs)} "
               f"meanACC: {np.mean(self.accs)} stdevACC: {stdev(self.accs)}")
 
-    def pred(self, X, y, selector, sample, selected_features):
-        # rfemodels = []
-        # knnmodels = []
-        # for x in range(self.s):  # kłopot z losowanie tym samych tabel z s>1
-        #     # selector = RFECV(self.RFECVestimator, min_features_to_select=self.RFECV_min_n_features, step=self.RFECVstep,
-        #     #                  n_jobs=-1)
-        #     # sample = selector.fit_transform(X, y)
-        #     print(sample)
-        #     rfemodels.append(selector)
-        #     # print(selector.get_support())
-        #     new_X = sample
-        #     print("Table: ", x + 1, "new_X shape:", new_X.shape, "selected features",
-        #           [i for i, x in enumerate(selector.support_) if x])
-        #     self.kNN.fit(new_X, y)
-        #     knnmodels.append(self.kNN)
-
+    def fit(self, X, y, selector, sample, selected_features):
         # print(sample)
         new_X = sample
         # rfemodels.append(selector)

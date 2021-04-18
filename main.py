@@ -20,71 +20,87 @@ X = scaler.fit_transform(X)
 y = T.iloc[:, 0]
 y = np.where(y == 'negative', 0, 1)
 y = LabelEncoder().fit_transform(y)
+one_percent = int((T.shape[1]-1)*0.01)
+# print(one_percent)
 
 metricList = ['euclidean', 'manhattan', 'chebyshev', 'canberra', 'braycurtis']
-models = []
+estimatorSVR = SVR(kernel="linear")
+estimatorTree = DecisionTreeClassifier(max_depth=5)
+estimators = []
+estimators.append(estimatorSVR)
+estimators.append(estimatorTree)
+models_all = []
 kl = [3, 5, 7]
-sl = [2]
+sl = [20]
 pl = [1.5, 3, 5, 10, 20]
 # kl = [3]
 # sl = [2]
 # pl = [1.5]
-estimator = SVR(kernel="linear")
 skf = StratifiedKFold(n_splits=10)
 skf.get_n_splits(X, y)
 
 
-def create_models():
+def create_models(estimator=None):
+    models = []
     start = timer()
     for k in kl:
         for s in sl:
             for i in range(1, 5):
                 for metric in metricList:
                     models.append(
-                        Model(n_neighbors=k, metric=metric, s=s, t=0.5, aggregation=i, RFECVestimator=estimator))
+                        Model(n_neighbors=k, metric=metric, s=s, t=0.5, aggregation=i, RFECVestimator=estimator, RFECV_min_n_features=one_percent))
             for i in range(1, 5):
                 for p in pl:
                     models.append(
-                        Model(n_neighbors=k, metric="minkowski", s=s, t=0.5, aggregation=i, RFECVestimator=estimator,
+                        Model(n_neighbors=k, metric="minkowski", s=s, t=0.5, aggregation=i, RFECVestimator=estimator, RFECV_min_n_features=one_percent,
                               p=p))
     end = timer()
-    print('Time create_models: ', end - start, 'Amount of models: ', len(models))
-    for model in models:
-        model.info()
+    print('Time create_models: ', end - start, 'Amount of models: ', len(models), estimator)
+    # for model in models:
+    #     model.info()
+    return models
 
 
-def pred_models():
+def pred_models(models_SVR, models_Tree):
     start = timer()
     iter = 0
     for train_index, test_index in skf.split(X, y):
         iter += 1
-        count_model = 0
         X_train, X_test = X[train_index], X[test_index]
         y_train, y_test = y[train_index], y[test_index]
-        selector, samples = get_sample(X_train, y_train, n_split=20)
-        for key, val in samples.items():
-            if type(key) is int:
-                for model in models:
-                    count_model += 1
-                    model.pred(X_train, y_train, selector=selector, sample=samples[key],
-                               selected_features=samples['features_true_' + str(key)])
-                    # print("Left ", len(models) - count_model, " models")
-        for model in models:
+
+        selector = RFECV(estimator=models_SVR[0].get_estimator(), min_features_to_select=one_percent, step=100, n_jobs=-1)
+        selectorSVR, samplesSVR = get_sample(X_train, y_train, n_split=models_SVR[0].get_s(), selector=selector)
+        for model in models_SVR:
+            for key, val in samplesSVR.items():
+                if type(key) is int:
+                    model.fit(X_train, y_train, selector=selectorSVR, sample=samplesSVR[key], selected_features=samplesSVR['features_true_' + str(key)])
+        for model in models_SVR:
             model.score(X_test, y_test)
+
+        selector = RFECV(estimator=models_SVR[0].get_estimator(), min_features_to_select=one_percent, step=100, n_jobs=-1)
+        selectorTree, samplesTree = get_sample(X_train, y_train, n_split=models_Tree[0].get_s(), selector=selector)
+        for model in models_Tree:
+            for key, val in samplesTree.items():
+                if type(key) is int:
+                    model.fit(X_train, y_train, selector=selectorTree, sample=samplesTree[key], selected_features=samplesTree['features_true_' + str(key)])
+        for model in models_Tree:
+            model.score(X_test, y_test)
+
         print("Iteration StratifiedKFold: ", iter)
     end = timer()
     print('Time pred_models: ', end - start)
-    for model in models:
+    for model in models_SVR:
         model.info()
         model.get_result()
-        write_to_csv("SVR_linear_komputer.csv", model.result_to_file())
+        write_to_csv("SVR_linear.csv", model.result_to_file())
+    for model in models_Tree:
+        model.info()
+        model.get_result()
+        write_to_csv("SVR_linear.csv", model.result_to_file())
 
 
-def get_sample(X, y, n_split):
-    selector = RFECV(estimator=estimator,
-                     min_features_to_select=200,
-                     step=100,
-                     n_jobs=-1)
+def get_sample(X, y, n_split, selector):
     sample = selector.fit_transform(X, y)
     features = dict(enumerate(selector.get_support().flatten(), 0))
     # print(features)
@@ -102,7 +118,7 @@ def get_sample(X, y, n_split):
                 samples[i] = np.array([X[:, random_col]]).T
                 samples['features_true_' + str(i)] = [random_col]
             features_true_copy.pop(random_col)
-    return selector, samples
+    return selector, samples,
 
 
 def write_to_csv(filename, result):
@@ -127,5 +143,6 @@ def write_to_csv(filename, result):
     print('Save file: ', filename)
 
 
-create_models()
-pred_models()
+models_SVR = create_models(estimator=estimators[0])
+models_Tree = create_models(estimator=estimators[1])
+pred_models(models_SVR=models_SVR, models_Tree=models_Tree)
