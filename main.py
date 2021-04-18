@@ -31,7 +31,7 @@ estimators.append(estimatorSVR)
 estimators.append(estimatorTree)
 models_all = []
 kl = [3, 5, 7]
-sl = [20]
+sl = [2]
 pl = [1.5, 3, 5, 10, 20]
 # kl = [3]
 # sl = [2]
@@ -69,8 +69,9 @@ def pred_models(models_SVR, models_Tree):
         X_train, X_test = X[train_index], X[test_index]
         y_train, y_test = y[train_index], y[test_index]
 
-        selector = RFECV(estimator=models_SVR[0].get_estimator(), min_features_to_select=one_percent, step=100, n_jobs=-1)
-        selectorSVR, samplesSVR = get_sample(X_train, y_train, n_split=models_SVR[0].get_s(), selector=selector)
+        selectorSVR = RFECV(estimator=models_SVR[0].get_estimator(),min_features_to_select=one_percent,step=100,n_jobs=-1)
+        sample = selectorSVR.fit_transform(X, y)
+        samplesSVR = get_sample(X_train, y_train, n_split=models_SVR[0].get_s(), selector=selectorSVR)
         for model in models_SVR:
             for key, val in samplesSVR.items():
                 if type(key) is int:
@@ -78,8 +79,9 @@ def pred_models(models_SVR, models_Tree):
         for model in models_SVR:
             model.score(X_test, y_test)
 
-        selector = RFECV(estimator=models_SVR[0].get_estimator(), min_features_to_select=one_percent, step=100, n_jobs=-1)
-        selectorTree, samplesTree = get_sample(X_train, y_train, n_split=models_Tree[0].get_s(), selector=selector)
+        selectorTree = RFECV(estimator=models_Tree[0].get_estimator(),min_features_to_select=one_percent,step=100,n_jobs=-1)
+        sample = selectorTree.fit_transform(X, y)
+        samplesTree = get_sample(X_train, y_train, n_split=models_Tree[0].get_s(), selector=selectorTree)
         for model in models_Tree:
             for key, val in samplesTree.items():
                 if type(key) is int:
@@ -93,15 +95,14 @@ def pred_models(models_SVR, models_Tree):
     for model in models_SVR:
         model.info()
         model.get_result()
-        write_to_csv("SVR_linear.csv", model.result_to_file())
+        write_to_csv("SVR_linear_komputer.csv", model.result_to_file())
     for model in models_Tree:
         model.info()
         model.get_result()
-        write_to_csv("SVR_linear.csv", model.result_to_file())
+        write_to_csv("SVR_linear_komputer.csv", model.result_to_file())
 
 
 def get_sample(X, y, n_split, selector):
-    sample = selector.fit_transform(X, y)
     features = dict(enumerate(selector.get_support().flatten(), 0))
     # print(features)
     features_true = {key: val for key, val in features.items() if val == True}
@@ -118,7 +119,7 @@ def get_sample(X, y, n_split, selector):
                 samples[i] = np.array([X[:, random_col]]).T
                 samples['features_true_' + str(i)] = [random_col]
             features_true_copy.pop(random_col)
-    return selector, samples,
+    return samples
 
 
 def write_to_csv(filename, result):
