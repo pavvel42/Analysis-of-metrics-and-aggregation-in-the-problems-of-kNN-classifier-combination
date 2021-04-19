@@ -100,6 +100,7 @@ def pred_models(models_SVR, models_Tree):
             model.score(X_test, y_test)
 
         for model in models_Tree:
+            model.info()
             sampleTree = get_samples_dict(model=model, samples_dict=samplesTree)
             for key, val in sampleTree.items():
                 if type(key) is int:
