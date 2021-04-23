@@ -3,6 +3,7 @@ from statistics import stdev
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.metrics import accuracy_score
 from sklearn.metrics import roc_auc_score
+from sklearn.metrics import confusion_matrix
 import numpy as np
 from agregacje import amean  # Arithmetic
 from agregacje import qmean  # Quadratic
@@ -27,6 +28,7 @@ class Model:
         self.knnmodels = []
         self.aucs = []
         self.accs = []
+        self.conf_matrix = {}
 
     def get_classifier(self):
         return self.kNN
@@ -64,6 +66,12 @@ class Model:
         pred, pimean = self.predict(X)
         self.aucs.append(roc_auc_score(y, pimean))
         self.accs.append(accuracy_score(y, pred))
+        tn, fp, fn, tp = confusion_matrix(y, pred).ravel()
+        # print(tn, fp, fn, tp)
+        self.conf_matrix['tn'] = self.conf_matrix.get('tn', 0) + tn
+        self.conf_matrix['fp'] = self.conf_matrix.get('fp', 0) + fp
+        self.conf_matrix['fn'] = self.conf_matrix.get('fn', 0) + fn
+        self.conf_matrix['tp'] = self.conf_matrix.get('tp', 0) + tp
 
     def predict(self, X):
         pi = []
@@ -87,9 +95,14 @@ class Model:
         return pred, pimean
 
     def result_to_file(self):
+        FP_Rate = self.conf_matrix['fp'] / (self.conf_matrix['fp'] + self.conf_matrix['tn'])
+        FN_Rate = self.conf_matrix['fn'] / (self.conf_matrix['tp'] + self.conf_matrix['fn'])
+        TP_Rate = self.conf_matrix['tp'] / (self.conf_matrix['tp'] + self.conf_matrix['fn'])
+        TN_Rate = self.conf_matrix['tn'] / (self.conf_matrix['fp'] + self.conf_matrix['tn'])
+        # print(FP_Rate, FN_Rate, TP_Rate, TN_Rate)
         return {'metric': self.metric, 'aggregation': self.get_aggregation(number=self.aggregation),
                 'n_neighbors': self.n_neighbors, 's': self.s,
-                't': self.t, 'p': self.p, 'RFECV_estimator': self.RFECVestimator,
-                'RFECV_min_n_features': self.RFECV_min_n_features,
-                'RFECV_step': self.RFECVstep, 'meanAUC': np.mean(self.aucs), 'stdevAUC': stdev(self.aucs),
-                'meanACCURACY': np.mean(self.accs), 'stdevACCURACY': stdev(self.accs)}
+                'p': self.p, 'RFECV_estimator': self.RFECVestimator,
+                'meanAUC': np.mean(self.aucs), 'stdevAUC': stdev(self.aucs),
+                'meanACCURACY': np.mean(self.accs), 'stdevACCURACY': stdev(self.accs),
+                'FP_Rate': FP_Rate, 'FN_Rate': FN_Rate, 'TP_Rate': TP_Rate, 'TN_Rate': TN_Rate}

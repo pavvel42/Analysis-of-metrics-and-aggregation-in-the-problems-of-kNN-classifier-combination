@@ -13,7 +13,7 @@ from Model import Model
 from timeit import default_timer as timer
 import sys
 
-sys.stdout = open("SVR_linear_Step=100.txt", "w")
+# sys.stdout = open("Konsola_mniejszy_zestaw.txt", "w")
 T = pd.read_csv("D:\GoogleDrive\Dokumenty\Studia\X semestr\Seminarium\Kod\data\colonTumor.csv")
 print(T.shape)
 scaler = MinMaxScaler()
@@ -31,7 +31,6 @@ estimatorTree = DecisionTreeClassifier(max_depth=5)
 estimators = []
 estimators.append(estimatorSVR)
 estimators.append(estimatorTree)
-models_all = []
 kl = [3, 5, 7]
 sl = [2, 5, 10, 20]
 pl = [1.5, 3, 5, 10, 20]
@@ -83,10 +82,12 @@ def pred_models(models_SVR, models_Tree):
                              n_jobs=-1)
         sample = selectorTree.fit_transform(X, y)
 
-        # dict przecowujacy sample dla roznych s
+        # dict przechowujacy sample dla roznych s
         for s in sl:
-            samplesSVR[s] = get_sample(X_train, y_train, n_split=s, selector=selectorSVR)
-            samplesTree[s] = get_sample(X_train, y_train, n_split=s, selector=selectorTree)
+            samplesSVR[s] = get_sample(X_train, y_train, n_split=s, selector=selectorSVR, iter=iter,
+                                       name_estimator='SVR')
+            samplesTree[s] = get_sample(X_train, y_train, n_split=s, selector=selectorTree, iter=iter,
+                                        name_estimator='Tree')
 
         # modele SVR oraz Tree
         for model in models_SVR:
@@ -115,30 +116,27 @@ def pred_models(models_SVR, models_Tree):
     for model in models_SVR:
         model.info()
         model.get_result()
-        write_to_csv("SVR_linear_Step=100.csv", model.result_to_file())
+        write_to_csv("SVRlinear_Step=100.csv", model.result_to_file())
     for model in models_Tree:
         model.info()
         model.get_result()
-        write_to_csv("SVR_linear_Step=100.csv", model.result_to_file())
+        write_to_csv("DecisionTree_Step=100.csv", model.result_to_file())
 
 
-def get_sample(X, y, n_split, selector):
+def get_sample(X, y, n_split, selector, iter, name_estimator):
+    samples = {}
     features = dict(enumerate(selector.get_support().flatten(), 0))
     # print(features)
     features_true = {key: val for key, val in features.items() if val == True}
-    # print(features_true)
-    samples = {}
-    for i in range(int(n_split)):
-        features_true_copy = features_true.copy()
-        for j in range(int(len(list(features_true.keys())) / int(n_split))):
-            random_col = random.choice(list(features_true_copy.keys()))
-            if i in samples:
-                samples[i] = np.append(samples[i], np.array([X[:, random_col]]).T, axis=1)
-                samples['features_true_' + str(i)].append(random_col)
-            else:
-                samples[i] = np.array([X[:, random_col]]).T
-                samples['features_true_' + str(i)] = [random_col]
-            features_true_copy.pop(random_col)
+    features_keys = list(features_true.keys())
+    random.shuffle(features_keys)
+    features_keys = list(split_list(features_keys, n_split))
+    # print(features_keys)
+    for i in range(len(features_keys)):
+        samples[i] = X[:, features_keys[i]]
+        samples['features_true_' + str(i)] = features_keys[i]
+    print('STATS: StratifiedKFold Iter ', str(iter), 'Estimator ', name_estimator, 'S: ', n_split,
+          'count features true ', len(features_true))
     return samples
 
 
@@ -154,23 +152,29 @@ def get_samples_dict(model, samples_dict):
     return samples
 
 
+def split_list(seq, size):
+    return (seq[i::size] for i in range(size))
+
+
 def write_to_csv(filename, result):
     result['Date'] = datetime.now().strftime("%m/%d/%Y, %H:%M:%S")
     my_file = Path(filename)
     if not my_file.is_file():
         with open(my_file, 'a') as csvfile:
-            fieldnames = ['metric', 'aggregation', 'n_neighbors', 's', 't', 'p', 'RFECV_estimator',
-                          'RFECV_min_n_features',
-                          'RFECV_step', 'meanAUC', 'stdevAUC', 'meanACCURACY', 'stdevACCURACY', 'stdevACCURACY', 'Date']
+            fieldnames = ['metric', 'aggregation', 'n_neighbors', 's', 'p', 'RFECV_estimator',
+                          'meanAUC', 'stdevAUC', 'meanACCURACY', 'stdevACCURACY', 'stdevACCURACY',
+                          'FP_Rate', 'FN_Rate', 'TP_Rate', 'TN_Rate', 'Date']
             writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
             writer.writerow({'metric': 'metric', 'aggregation': 'aggregation', 'n_neighbors': 'n_neighbors',
-                             's': 's', 't': 't', 'p': 'p', 'RFECV_estimator': 'RFECV_estimator',
-                             'RFECV_min_n_features': 'RFECV_min_n_features',
-                             'RFECV_step': 'RFECV_step', 'meanAUC': 'meanAUC', 'stdevAUC': 'stdevAUC',
-                             'meanACCURACY': 'meanACCURACY', 'stdevACCURACY': 'stdevACCURACY', 'Date': 'Date'})
+                             's': 's', 'p': 'p', 'RFECV_estimator': 'RFECV_estimator', 'meanAUC': 'meanAUC',
+                             'stdevAUC': 'stdevAUC',
+                             'meanACCURACY': 'meanACCURACY', 'stdevACCURACY': 'stdevACCURACY',
+                             'FP_Rate': 'FP_Rate', 'FN_Rate': 'FN_Rate', 'TP_Rate': 'TP_Rate', 'TN_Rate': 'TN_Rate',
+                             'Date': 'Date'})
     with open(my_file, 'a', newline='') as csvfile:
-        fieldnames = ['metric', 'aggregation', 'n_neighbors', 's', 't', 'p', 'RFECV_estimator', 'RFECV_min_n_features',
-                      'RFECV_step', 'meanAUC', 'stdevAUC', 'meanACCURACY', 'stdevACCURACY', 'stdevACCURACY', 'Date']
+        fieldnames = ['metric', 'aggregation', 'n_neighbors', 's', 'p', 'RFECV_estimator',
+                      'meanAUC', 'stdevAUC', 'meanACCURACY', 'stdevACCURACY', 'stdevACCURACY',
+                      'FP_Rate', 'FN_Rate', 'TP_Rate', 'TN_Rate', 'Date']
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
         writer.writerow(result)
     print('Save file: ', filename)
@@ -178,5 +182,7 @@ def write_to_csv(filename, result):
 
 models_SVR = create_models(estimator=estimators[0])
 models_Tree = create_models(estimator=estimators[1])
+# del models_SVR[1:40]
+# del models_Tree[1:40]
 pred_models(models_SVR=models_SVR, models_Tree=models_Tree)
-sys.stdout.close()
+# sys.stdout.close()
