@@ -8,6 +8,7 @@ import numpy as np
 import pandas as pd
 from sklearn.svm import SVR
 from sklearn.tree import DecisionTreeClassifier
+from sklearn.ensemble import RandomForestClassifier
 from sklearn.feature_selection import RFECV
 from Model import Model
 from timeit import default_timer as timer
@@ -22,17 +23,19 @@ X = scaler.fit_transform(X)
 y = T.iloc[:, 0]
 y = np.where(y == 'negative', 0, 1)
 y = LabelEncoder().fit_transform(y)
-one_percent = int((T.shape[1] - 1) * 0.01)
+one_percent = int((T.shape[1] - 1) * 0.1)
 # print(one_percent)
 
 metricList = ['euclidean', 'manhattan', 'chebyshev', 'canberra', 'braycurtis']
 estimatorSVR = SVR(kernel="linear")
 estimatorTree = DecisionTreeClassifier(max_depth=5)
+estimatorForest = RandomForestClassifier(n_jobs=-1)
 estimators = []
 estimators.append(estimatorSVR)
 estimators.append(estimatorTree)
+estimators.append(estimatorForest)
 kl = [3, 5, 7]
-sl = [2, 5, 10, 20]
+sl = [2, 5]
 pl = [1.5, 3, 5, 10, 20]
 # kl = [3]
 # sl = [2]
@@ -64,23 +67,27 @@ def create_models(estimator=None):
     return models
 
 
-def pred_models(models_SVR, models_Tree):
+def pred_models(models_SVR, models_Tree, models_Forest):
     start = timer()
     iter = 0
     samplesSVR = {}
     samplesTree = {}
+    samplesForest = {}
     for train_index, test_index in skf.split(X, y):
         iter += 1
         X_train, X_test = X[train_index], X[test_index]
         y_train, y_test = y[train_index], y[test_index]
 
-        # selektor SVR oraz Tree
+        # # selektor SVR, Tree, Forest
         selectorSVR = RFECV(estimator=models_SVR[0].get_estimator(), min_features_to_select=one_percent, step=100,
                             n_jobs=-1)
         sample = selectorSVR.fit_transform(X, y)
         selectorTree = RFECV(estimator=models_Tree[0].get_estimator(), min_features_to_select=one_percent, step=100,
                              n_jobs=-1)
         sample = selectorTree.fit_transform(X, y)
+        selectorForest = RFECV(estimator=models_Forest[0].get_estimator(), min_features_to_select=one_percent, step=100,
+                             n_jobs=-1)
+        sample = selectorForest.fit_transform(X, y)
 
         # dict przechowujacy sample dla roznych s
         for s in sl:
@@ -88,8 +95,10 @@ def pred_models(models_SVR, models_Tree):
                                        name_estimator='SVR')
             samplesTree[s] = get_sample(X_train, y_train, n_split=s, selector=selectorTree, iter=iter,
                                         name_estimator='Tree')
+            samplesForest[s] = get_sample(X_train, y_train, n_split=s, selector=selectorForest, iter=iter,
+                                        name_estimator='Forest')
 
-        # modele SVR oraz Tree
+        # modele SVR, Tree, Forest
         for model in models_SVR:
             model.info()
             sampleSVR = get_samples_dict(model=model, samples_dict=samplesSVR)
@@ -105,9 +114,19 @@ def pred_models(models_SVR, models_Tree):
             sampleTree = get_samples_dict(model=model, samples_dict=samplesTree)
             for key, val in sampleTree.items():
                 if type(key) is int:
-                    model.fit(X_train, y_train, selector=selectorSVR, sample=sampleTree[key],
+                    model.fit(X_train, y_train, selector=selectorTree, sample=sampleTree[key],
                               selected_features=sampleTree['features_true_' + str(key)])
         for model in models_Tree:
+            model.score(X_test, y_test)
+
+        for model in models_Forest:
+            model.info()
+            sampleForest = get_samples_dict(model=model, samples_dict=samplesForest)
+            for key, val in sampleForest.items():
+                if type(key) is int:
+                    model.fit(X_train, y_train, selector=selectorForest, sample=sampleForest[key],
+                              selected_features=sampleForest['features_true_' + str(key)])
+        for model in models_Forest:
             model.score(X_test, y_test)
 
         print("Finish iteration StratifiedKFold: ", iter)
@@ -116,27 +135,37 @@ def pred_models(models_SVR, models_Tree):
     for model in models_SVR:
         model.info()
         model.get_result()
-        write_to_csv("SVRlinear_Step=100.csv", model.result_to_file())
+        write_to_csv("SVRlinear_10%.csv", model.result_to_file())
     for model in models_Tree:
         model.info()
         model.get_result()
-        write_to_csv("DecisionTree_Step=100.csv", model.result_to_file())
+        write_to_csv("DecisionTree_10%.csv", model.result_to_file())
+    for model in models_Forest:
+        model.info()
+        model.get_result()
+        write_to_csv("RandomForest_10%.csv", model.result_to_file())
 
 
 def get_sample(X, y, n_split, selector, iter, name_estimator):
+    # ranking = dict(enumerate(selector.ranking_.flatten(), 0))
+    # ranking_best = {key: val for key, val in ranking.items() if val == 1}
     samples = {}
     features = dict(enumerate(selector.get_support().flatten(), 0))
     # print(features)
     features_true = {key: val for key, val in features.items() if val == True}
     features_keys = list(features_true.keys())
     random.shuffle(features_keys)
+    # print('features_keys', features_keys)
+    if len(features_keys) > one_percent:
+        features_keys = random.sample(features_keys, one_percent)
+    # print('features_keys sample', features_keys, len(features_keys))
     features_keys = list(split_list(features_keys, n_split))
     # print(features_keys)
     for i in range(len(features_keys)):
         samples[i] = X[:, features_keys[i]]
         samples['features_true_' + str(i)] = features_keys[i]
     print('STATS: StratifiedKFold Iter ', str(iter), 'Estimator ', name_estimator, 'S: ', n_split,
-          'count features true ', len(features_true))
+          'count features true ', len(features_true), 'one_percent features', len(features_keys))
     return samples
 
 
@@ -145,10 +174,10 @@ def get_samples_dict(model, samples_dict):
         samples = samples_dict[2]
     if model.get_s() == sl[1]:  # s=5
         samples = samples_dict[5]
-    if model.get_s() == sl[2]:  # s=10
-        samples = samples_dict[10]
-    if model.get_s() == sl[3]:  # s=20
-        samples = samples_dict[20]
+    # if model.get_s() == sl[2]:  # s=10
+    #     samples = samples_dict[10]
+    # if model.get_s() == sl[3]:  # s=20
+    #     samples = samples_dict[20]
     return samples
 
 
@@ -182,7 +211,8 @@ def write_to_csv(filename, result):
 
 models_SVR = create_models(estimator=estimators[0])
 models_Tree = create_models(estimator=estimators[1])
+models_Forest = create_models(estimator=estimators[2])
 # del models_SVR[1:40]
-# del models_Tree[1:40]
-pred_models(models_SVR=models_SVR, models_Tree=models_Tree)
+# del models_Forest[2:240]
+pred_models(models_SVR=models_SVR, models_Tree=models_Tree, models_Forest=models_Forest)
 # sys.stdout.close()
