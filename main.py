@@ -4,6 +4,7 @@ from pathlib import Path
 import csv
 from sklearn.model_selection import StratifiedKFold
 from sklearn.preprocessing import MinMaxScaler, LabelEncoder
+from sklearn.impute import KNNImputer
 import numpy as np
 import pandas as pd
 from sklearn.svm import SVR
@@ -14,17 +15,22 @@ from Model import Model
 from timeit import default_timer as timer
 import sys
 
-# sys.stdout = open("Konsola_mniejszy_zestaw.txt", "w")
-T = pd.read_csv("D:\GoogleDrive\Dokumenty\Studia\X semestr\Seminarium\Kod\data\colonTumor.csv")
-print(T.shape)
+name_of_set = 'lymphoma'
+T = pd.read_csv("data/" + name_of_set + ".csv")
 scaler = MinMaxScaler()
 X = T.iloc[:, 1:T.shape[1]]
+X = X.replace(' ?', np.nan)  # brakujace wartosci
+imputer = KNNImputer(n_neighbors=2)
+X = imputer.fit_transform(X)
 X = scaler.fit_transform(X)
 y = T.iloc[:, 0]
-y = np.where(y == 'negative', 0, 1)
+y = np.where(y == 'germinal', 0, 1)  # ZMIENIC dla innych danych!
 y = LabelEncoder().fit_transform(y)
-one_percent = int((T.shape[1] - 1) * 0.1)
-# print(one_percent)
+percentage = 1
+percentage_of_set = int((T.shape[1] - 1) * 0.01)
+sys.stdout = open(name_of_set + "_" + str(percentage) + "%.txt", "w")
+print('T.shape', T.shape)
+print('percentage_of_set ', percentage_of_set)
 
 metricList = ['euclidean', 'manhattan', 'chebyshev', 'canberra', 'braycurtis']
 estimatorSVR = SVR(kernel="linear")
@@ -35,7 +41,7 @@ estimators.append(estimatorSVR)
 estimators.append(estimatorTree)
 estimators.append(estimatorForest)
 kl = [3, 5, 7]
-sl = [2, 5]
+sl = [2, 5, 10, 20]
 pl = [1.5, 3, 5, 10, 20]
 # kl = [3]
 # sl = [2]
@@ -53,12 +59,12 @@ def create_models(estimator=None):
                 for metric in metricList:
                     models.append(
                         Model(n_neighbors=k, metric=metric, s=s, t=0.5, aggregation=i, RFECVestimator=estimator,
-                              RFECV_min_n_features=one_percent))
+                              RFECV_min_n_features=percentage_of_set))
             for i in range(1, 5):
                 for p in pl:
                     models.append(
                         Model(n_neighbors=k, metric="minkowski", s=s, t=0.5, aggregation=i, RFECVestimator=estimator,
-                              RFECV_min_n_features=one_percent,
+                              RFECV_min_n_features=percentage_of_set,
                               p=p))
     end = timer()
     print('Time create_models: ', end - start, 'Amount of models: ', len(models), estimator)
@@ -79,14 +85,16 @@ def pred_models(models_SVR, models_Tree, models_Forest):
         y_train, y_test = y[train_index], y[test_index]
 
         # # selektor SVR, Tree, Forest
-        selectorSVR = RFECV(estimator=models_SVR[0].get_estimator(), min_features_to_select=one_percent, step=100,
+        selectorSVR = RFECV(estimator=models_SVR[0].get_estimator(), min_features_to_select=percentage_of_set, step=100,
                             n_jobs=-1)
         sample = selectorSVR.fit_transform(X, y)
-        selectorTree = RFECV(estimator=models_Tree[0].get_estimator(), min_features_to_select=one_percent, step=100,
+        selectorTree = RFECV(estimator=models_Tree[0].get_estimator(), min_features_to_select=percentage_of_set,
+                             step=100,
                              n_jobs=-1)
         sample = selectorTree.fit_transform(X, y)
-        selectorForest = RFECV(estimator=models_Forest[0].get_estimator(), min_features_to_select=one_percent, step=100,
-                             n_jobs=-1)
+        selectorForest = RFECV(estimator=models_Forest[0].get_estimator(), min_features_to_select=percentage_of_set,
+                               step=100,
+                               n_jobs=-1)
         sample = selectorForest.fit_transform(X, y)
 
         # dict przechowujacy sample dla roznych s
@@ -96,7 +104,7 @@ def pred_models(models_SVR, models_Tree, models_Forest):
             samplesTree[s] = get_sample(X_train, y_train, n_split=s, selector=selectorTree, iter=iter,
                                         name_estimator='Tree')
             samplesForest[s] = get_sample(X_train, y_train, n_split=s, selector=selectorForest, iter=iter,
-                                        name_estimator='Forest')
+                                          name_estimator='Forest')
 
         # modele SVR, Tree, Forest
         for model in models_SVR:
@@ -135,15 +143,15 @@ def pred_models(models_SVR, models_Tree, models_Forest):
     for model in models_SVR:
         model.info()
         model.get_result()
-        write_to_csv("SVRlinear_10%.csv", model.result_to_file())
+        write_to_csv(name_of_set + "_SVRlinear_" + str(percentage) + "%.csv", model.result_to_file())
     for model in models_Tree:
         model.info()
         model.get_result()
-        write_to_csv("DecisionTree_10%.csv", model.result_to_file())
+        write_to_csv(name_of_set + "_DecisionTree_" + str(percentage) + "%.csv", model.result_to_file())
     for model in models_Forest:
         model.info()
         model.get_result()
-        write_to_csv("RandomForest_10%.csv", model.result_to_file())
+        write_to_csv(name_of_set + "_RandomForest_" + str(percentage) + "%.csv", model.result_to_file())
 
 
 def get_sample(X, y, n_split, selector, iter, name_estimator):
@@ -156,8 +164,8 @@ def get_sample(X, y, n_split, selector, iter, name_estimator):
     features_keys = list(features_true.keys())
     random.shuffle(features_keys)
     # print('features_keys', features_keys)
-    if len(features_keys) > one_percent:
-        features_keys = random.sample(features_keys, one_percent)
+    if len(features_keys) > percentage_of_set:
+        features_keys = random.sample(features_keys, percentage_of_set)
     # print('features_keys sample', features_keys, len(features_keys))
     features_keys = list(split_list(features_keys, n_split))
     # print(features_keys)
@@ -165,7 +173,7 @@ def get_sample(X, y, n_split, selector, iter, name_estimator):
         samples[i] = X[:, features_keys[i]]
         samples['features_true_' + str(i)] = features_keys[i]
     print('STATS: StratifiedKFold Iter ', str(iter), 'Estimator ', name_estimator, 'S: ', n_split,
-          'count features true ', len(features_true), 'one_percent features', len(features_keys))
+          'count features true ', len(features_true), 's ', len(features_keys))
     return samples
 
 
@@ -174,10 +182,10 @@ def get_samples_dict(model, samples_dict):
         samples = samples_dict[2]
     if model.get_s() == sl[1]:  # s=5
         samples = samples_dict[5]
-    # if model.get_s() == sl[2]:  # s=10
-    #     samples = samples_dict[10]
-    # if model.get_s() == sl[3]:  # s=20
-    #     samples = samples_dict[20]
+    if model.get_s() == sl[2]:  # s=10
+        samples = samples_dict[10]
+    if model.get_s() == sl[3]:  # s=20
+        samples = samples_dict[20]
     return samples
 
 
@@ -215,4 +223,4 @@ models_Forest = create_models(estimator=estimators[2])
 # del models_SVR[1:40]
 # del models_Forest[2:240]
 pred_models(models_SVR=models_SVR, models_Tree=models_Tree, models_Forest=models_Forest)
-# sys.stdout.close()
+sys.stdout.close()
