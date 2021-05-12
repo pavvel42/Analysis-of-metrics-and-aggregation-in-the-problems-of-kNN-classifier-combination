@@ -15,26 +15,26 @@ from Model import Model
 from timeit import default_timer as timer
 import sys
 
-name_of_set = 'lymphoma'
+name_of_set = 'colon'
 T = pd.read_csv("data/" + name_of_set + ".csv")
 scaler = MinMaxScaler()
 X = T.iloc[:, 1:T.shape[1]]
-X = X.replace(' ?', np.nan)  # brakujace wartosci
-imputer = KNNImputer(n_neighbors=2)
-X = imputer.fit_transform(X)
+# X = X.replace(' ?', np.nan)  # brakujace wartosci
+# imputer = KNNImputer(n_neighbors=2)
+# X = imputer.fit_transform(X)
 X = scaler.fit_transform(X)
 y = T.iloc[:, 0]
-y = np.where(y == 'germinal', 0, 1)  # ZMIENIC dla innych danych!
+y = np.where(y == 'negative', 0, 1)  # ZMIENIC dla innych danych!
 y = LabelEncoder().fit_transform(y)
 percentage = 1
 percentage_of_set = int((T.shape[1] - 1) * 0.01)
-sys.stdout = open(name_of_set + "_" + str(percentage) + "%.txt", "w")
+# sys.stdout = open(name_of_set + "_" + str(percentage) + "%.txt", "w")
 print('T.shape', T.shape)
 print('percentage_of_set ', percentage_of_set)
 
 metricList = ['euclidean', 'manhattan', 'chebyshev', 'canberra', 'braycurtis']
 estimatorSVR = SVR(kernel="linear")
-estimatorTree = DecisionTreeClassifier(max_depth=5)
+estimatorTree = DecisionTreeClassifier(max_depth=15)
 estimatorForest = RandomForestClassifier(n_jobs=-1)
 estimators = []
 estimators.append(estimatorSVR)
@@ -87,15 +87,15 @@ def pred_models(models_SVR, models_Tree, models_Forest):
         # # selektor SVR, Tree, Forest
         selectorSVR = RFECV(estimator=models_SVR[0].get_estimator(), min_features_to_select=percentage_of_set, step=100,
                             n_jobs=-1)
-        sample = selectorSVR.fit_transform(X, y)
+        sample = selectorSVR.fit_transform(X_train, y_train)
         selectorTree = RFECV(estimator=models_Tree[0].get_estimator(), min_features_to_select=percentage_of_set,
                              step=100,
                              n_jobs=-1)
-        sample = selectorTree.fit_transform(X, y)
+        sample = selectorTree.fit_transform(X_train, y_train)
         selectorForest = RFECV(estimator=models_Forest[0].get_estimator(), min_features_to_select=percentage_of_set,
                                step=100,
                                n_jobs=-1)
-        sample = selectorForest.fit_transform(X, y)
+        sample = selectorForest.fit_transform(X_train, y_train)
 
         # dict przechowujacy sample dla roznych s
         for s in sl:
@@ -110,32 +110,38 @@ def pred_models(models_SVR, models_Tree, models_Forest):
         for model in models_SVR:
             model.info()
             sampleSVR = get_samples_dict(model=model, samples_dict=samplesSVR)
+            model.fit_single_knn(X_train, y_train, sample_dict=sampleSVR)
             for key, val in sampleSVR.items():
                 if type(key) is int:
                     model.fit(X_train, y_train, selector=selectorSVR, sample=sampleSVR[key],
                               selected_features=sampleSVR['features_true_' + str(key)])
         for model in models_SVR:
             model.score(X_test, y_test)
+            model.score_for_single_knn(X_test, y_test)
 
         for model in models_Tree:
             model.info()
             sampleTree = get_samples_dict(model=model, samples_dict=samplesTree)
+            model.fit_single_knn(X_train, y_train, sample_dict=sampleSVR)
             for key, val in sampleTree.items():
                 if type(key) is int:
                     model.fit(X_train, y_train, selector=selectorTree, sample=sampleTree[key],
                               selected_features=sampleTree['features_true_' + str(key)])
         for model in models_Tree:
             model.score(X_test, y_test)
+            model.score_for_single_knn(X_test, y_test)
 
         for model in models_Forest:
             model.info()
             sampleForest = get_samples_dict(model=model, samples_dict=samplesForest)
+            model.fit_single_knn(X_train, y_train, sample_dict=sampleSVR)
             for key, val in sampleForest.items():
                 if type(key) is int:
                     model.fit(X_train, y_train, selector=selectorForest, sample=sampleForest[key],
                               selected_features=sampleForest['features_true_' + str(key)])
         for model in models_Forest:
             model.score(X_test, y_test)
+            model.score_for_single_knn(X_test, y_test)
 
         print("Finish iteration StratifiedKFold: ", iter)
     end = timer()
@@ -199,18 +205,19 @@ def write_to_csv(filename, result):
     if not my_file.is_file():
         with open(my_file, 'a') as csvfile:
             fieldnames = ['metric', 'aggregation', 'n_neighbors', 's', 'p', 'RFECV_estimator',
-                          'meanAUC', 'stdevAUC', 'meanACCURACY', 'stdevACCURACY', 'stdevACCURACY',
+                          'meanAUC', 'mean_single_kNN_AUC', 'stdevAUC', 'meanACCURACY', 'mean_single_kNN_ACCURACY', 'stdevACCURACY', 'stdevACCURACY',
                           'FP_Rate', 'FN_Rate', 'TP_Rate', 'TN_Rate', 'Date']
             writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
             writer.writerow({'metric': 'metric', 'aggregation': 'aggregation', 'n_neighbors': 'n_neighbors',
                              's': 's', 'p': 'p', 'RFECV_estimator': 'RFECV_estimator', 'meanAUC': 'meanAUC',
+                             'mean_single_kNN_AUC': 'mean_single_kNN_AUC',
                              'stdevAUC': 'stdevAUC',
-                             'meanACCURACY': 'meanACCURACY', 'stdevACCURACY': 'stdevACCURACY',
+                             'meanACCURACY': 'meanACCURACY', 'mean_single_kNN_ACCURACY': 'mean_single_kNN_ACCURACY', 'stdevACCURACY': 'stdevACCURACY',
                              'FP_Rate': 'FP_Rate', 'FN_Rate': 'FN_Rate', 'TP_Rate': 'TP_Rate', 'TN_Rate': 'TN_Rate',
                              'Date': 'Date'})
     with open(my_file, 'a', newline='') as csvfile:
         fieldnames = ['metric', 'aggregation', 'n_neighbors', 's', 'p', 'RFECV_estimator',
-                      'meanAUC', 'stdevAUC', 'meanACCURACY', 'stdevACCURACY', 'stdevACCURACY',
+                      'meanAUC', 'mean_single_kNN_AUC', 'stdevAUC', 'meanACCURACY', 'mean_single_kNN_ACCURACY', 'stdevACCURACY', 'stdevACCURACY',
                       'FP_Rate', 'FN_Rate', 'TP_Rate', 'TN_Rate', 'Date']
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
         writer.writerow(result)
@@ -220,7 +227,7 @@ def write_to_csv(filename, result):
 models_SVR = create_models(estimator=estimators[0])
 models_Tree = create_models(estimator=estimators[1])
 models_Forest = create_models(estimator=estimators[2])
-# del models_SVR[1:40]
-# del models_Forest[2:240]
+# del models_SVR[5:480]
+# del models_Forest[5:480]
 pred_models(models_SVR=models_SVR, models_Tree=models_Tree, models_Forest=models_Forest)
-sys.stdout.close()
+# sys.stdout.close()

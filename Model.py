@@ -18,17 +18,23 @@ class Model:
         self.metric = metric
         self.p = p
         self.kNN = KNeighborsClassifier(n_neighbors=self.n_neighbors, metric=self.metric, p=self.p)
+        self.single_kNN = KNeighborsClassifier(n_neighbors=self.n_neighbors, metric=self.metric, p=self.p)
         self.s = s
         self.t = t
         self.aggregation = aggregation
         self.RFECVestimator = RFECVestimator
         self.RFECVstep = RFECVstep
         self.RFECV_min_n_features = RFECV_min_n_features
-        self.rfemodels = []
+        self.rfecvmodels = []
         self.knnmodels = []
+        self.rfecvmodels_for_single_knn = []
+        self.knnmodels_for_single_knn = []
         self.aucs = []
         self.accs = []
         self.conf_matrix = {}
+        self.aucs_for_single_knn = []
+        self.accs_for_single_knn = []
+        self.conf_matrix_for_single_knn = {}
 
     def get_classifier(self):
         return self.kNN
@@ -60,7 +66,19 @@ class Model:
         copy_knn = copy.deepcopy(self.kNN)
         copy_knn.fit(new_X, y)
         self.knnmodels.append(copy_knn)
-        self.rfemodels.append(selected_features)
+        self.rfecvmodels.append(selected_features)
+
+    def fit_single_knn(self, X, y, sample_dict):
+        selected_features = []
+        for key, val in sample_dict.items():
+            if type(key) is not int:
+                selected_features.extend(val)
+        # print(selected_features)
+        new_X = X[:, selected_features]
+        copy_knn = copy.deepcopy(self.single_kNN)
+        copy_knn.fit(new_X, y)
+        self.knnmodels_for_single_knn.append(copy_knn)
+        self.rfecvmodels_for_single_knn.append(selected_features)
 
     def score(self, X, y):
         pred, pimean = self.predict(X)
@@ -73,12 +91,23 @@ class Model:
         self.conf_matrix['fn'] = self.conf_matrix.get('fn', 0) + fn
         self.conf_matrix['tp'] = self.conf_matrix.get('tp', 0) + tp
 
+    def score_for_single_knn(self, X, y):
+        pred, pimean = self.predict_for_single_knn(X)
+        self.aucs_for_single_knn.append(roc_auc_score(y, pimean))
+        self.accs_for_single_knn.append(accuracy_score(y, pred))
+        tn, fp, fn, tp = confusion_matrix(y, pred).ravel()
+        # print(tn, fp, fn, tp)
+        self.conf_matrix_for_single_knn['tn'] = self.conf_matrix_for_single_knn.get('tn', 0) + tn
+        self.conf_matrix_for_single_knn['fp'] = self.conf_matrix_for_single_knn.get('fp', 0) + fp
+        self.conf_matrix_for_single_knn['fn'] = self.conf_matrix_for_single_knn.get('fn', 0) + fn
+        self.conf_matrix_for_single_knn['tp'] = self.conf_matrix_for_single_knn.get('tp', 0) + tp
+
     def predict(self, X):
         pi = []
         pimean = None
 
         for x in range(len(self.knnmodels)):
-            new_X = X[:, self.rfemodels[x]]
+            new_X = X[:, self.rfecvmodels[x]]
             prob = self.knnmodels[x].predict_proba(new_X)
             pi.append(prob[:, 1])
         pi = np.array(pi)
@@ -94,6 +123,19 @@ class Model:
         pred = np.where(pimean < self.t, 0, 1)
         return pred, pimean
 
+    def predict_for_single_knn(self, X):
+        pi = []
+        pimean = None
+
+        for x in range(len(self.knnmodels_for_single_knn)):
+            new_X = X[:, self.rfecvmodels_for_single_knn[x]]
+            prob = self.knnmodels_for_single_knn[x].predict_proba(new_X)
+            pi.append(prob[:, 1])
+        pimean = pi[0]
+
+        pred = np.where(pimean < self.t, 0, 1)
+        return pred, pimean
+
     def result_to_file(self):
         FP_Rate = self.conf_matrix['fp'] / (self.conf_matrix['fp'] + self.conf_matrix['tn'])
         FN_Rate = self.conf_matrix['fn'] / (self.conf_matrix['tp'] + self.conf_matrix['fn'])
@@ -103,6 +145,8 @@ class Model:
         return {'metric': self.metric, 'aggregation': self.get_aggregation(number=self.aggregation),
                 'n_neighbors': self.n_neighbors, 's': self.s,
                 'p': self.p, 'RFECV_estimator': self.RFECVestimator,
-                'meanAUC': np.mean(self.aucs), 'stdevAUC': stdev(self.aucs),
-                'meanACCURACY': np.mean(self.accs), 'stdevACCURACY': stdev(self.accs),
+                'meanAUC': np.mean(self.aucs), 'mean_single_kNN_AUC': np.mean(self.aucs_for_single_knn),
+                'stdevAUC': stdev(self.aucs),
+                'meanACCURACY': np.mean(self.accs), 'mean_single_kNN_ACCURACY': np.mean(self.accs_for_single_knn),
+                'stdevACCURACY': stdev(self.accs),
                 'FP_Rate': FP_Rate, 'FN_Rate': FN_Rate, 'TP_Rate': TP_Rate, 'TN_Rate': TN_Rate}
