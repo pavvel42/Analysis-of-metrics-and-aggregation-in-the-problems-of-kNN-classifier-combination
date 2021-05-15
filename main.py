@@ -15,8 +15,8 @@ from Model import Model
 from timeit import default_timer as timer
 import sys
 
-name_of_set = 'colon'
-T = pd.read_csv("data/" + name_of_set + ".csv")
+name_of_set = 'ovarian'
+T = pd.read_csv("data/" + name_of_set + ".csv", header=None)
 scaler = MinMaxScaler()
 X = T.iloc[:, 1:T.shape[1]]
 # X = X.replace(' ?', np.nan)  # brakujace wartosci
@@ -24,11 +24,11 @@ X = T.iloc[:, 1:T.shape[1]]
 # X = imputer.fit_transform(X)
 X = scaler.fit_transform(X)
 y = T.iloc[:, 0]
-y = np.where(y == 'negative', 0, 1)  # ZMIENIC dla innych danych!
+y = np.where(y == 'Cancer', 0, 1)  # ZMIENIC dla innych danych!
 y = LabelEncoder().fit_transform(y)
-percentage = 1
-percentage_of_set = int((T.shape[1] - 1) * 0.01)
-# sys.stdout = open(name_of_set + "_" + str(percentage) + "%.txt", "w")
+percentage = 10
+percentage_of_set = int((T.shape[1] - 1) * 0.1)
+sys.stdout = open(name_of_set + "_" + str(percentage) + "%.txt", "w")
 print('T.shape', T.shape)
 print('percentage_of_set ', percentage_of_set)
 
@@ -230,4 +230,4 @@ models_Forest = create_models(estimator=estimators[2])
 # del models_SVR[5:480]
 # del models_Forest[5:480]
 pred_models(models_SVR=models_SVR, models_Tree=models_Tree, models_Forest=models_Forest)
-# sys.stdout.close()
+sys.stdout.close()
