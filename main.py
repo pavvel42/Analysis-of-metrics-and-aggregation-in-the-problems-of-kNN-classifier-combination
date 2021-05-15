@@ -28,7 +28,7 @@ y = np.where(y == 'Cancer', 0, 1)  # ZMIENIC dla innych danych!
 y = LabelEncoder().fit_transform(y)
 percentage = 10
 percentage_of_set = int((T.shape[1] - 1) * 0.1)
-sys.stdout = open(name_of_set + "_" + str(percentage) + "%.txt", "w")
+sys.stdout = open("los_organiczenie_nie/" + name_of_set + "/" + name_of_set + "_" + str(percentage) + "%.txt", "w")
 print('T.shape', T.shape)
 print('percentage_of_set ', percentage_of_set)
 
@@ -205,19 +205,22 @@ def write_to_csv(filename, result):
     if not my_file.is_file():
         with open(my_file, 'a') as csvfile:
             fieldnames = ['metric', 'aggregation', 'n_neighbors', 's', 'p', 'RFECV_estimator',
-                          'meanAUC', 'mean_single_kNN_AUC', 'stdevAUC', 'meanACCURACY', 'mean_single_kNN_ACCURACY', 'stdevACCURACY', 'stdevACCURACY',
+                          'meanAUC', 'mean_single_kNN_AUC', 'stdevAUC', 'meanACCURACY', 'mean_single_kNN_ACCURACY',
+                          'stdevACCURACY', 'stdevACCURACY',
                           'FP_Rate', 'FN_Rate', 'TP_Rate', 'TN_Rate', 'Date']
             writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
             writer.writerow({'metric': 'metric', 'aggregation': 'aggregation', 'n_neighbors': 'n_neighbors',
                              's': 's', 'p': 'p', 'RFECV_estimator': 'RFECV_estimator', 'meanAUC': 'meanAUC',
                              'mean_single_kNN_AUC': 'mean_single_kNN_AUC',
                              'stdevAUC': 'stdevAUC',
-                             'meanACCURACY': 'meanACCURACY', 'mean_single_kNN_ACCURACY': 'mean_single_kNN_ACCURACY', 'stdevACCURACY': 'stdevACCURACY',
+                             'meanACCURACY': 'meanACCURACY', 'mean_single_kNN_ACCURACY': 'mean_single_kNN_ACCURACY',
+                             'stdevACCURACY': 'stdevACCURACY',
                              'FP_Rate': 'FP_Rate', 'FN_Rate': 'FN_Rate', 'TP_Rate': 'TP_Rate', 'TN_Rate': 'TN_Rate',
                              'Date': 'Date'})
     with open(my_file, 'a', newline='') as csvfile:
         fieldnames = ['metric', 'aggregation', 'n_neighbors', 's', 'p', 'RFECV_estimator',
-                      'meanAUC', 'mean_single_kNN_AUC', 'stdevAUC', 'meanACCURACY', 'mean_single_kNN_ACCURACY', 'stdevACCURACY', 'stdevACCURACY',
+                      'meanAUC', 'mean_single_kNN_AUC', 'stdevAUC', 'meanACCURACY', 'mean_single_kNN_ACCURACY',
+                      'stdevACCURACY', 'stdevACCURACY',
                       'FP_Rate', 'FN_Rate', 'TP_Rate', 'TN_Rate', 'Date']
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
         writer.writerow(result)
