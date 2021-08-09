@@ -26,9 +26,9 @@ X = scaler.fit_transform(X)
 y = T.iloc[:, 0]
 y = np.where(y == 'Cancer', 0, 1)  # ZMIENIC dla innych danych!
 y = LabelEncoder().fit_transform(y)
-percentage = 10
-percentage_of_set = int((T.shape[1] - 1) * 0.1)
-sys.stdout = open("los_organiczenie_nie/" + name_of_set + "/" + name_of_set + "_" + str(percentage) + "%.txt", "w")
+percentage = 5
+percentage_of_set = int((T.shape[1] - 1) * 0.05)
+# sys.stdout = open("los_ograniczenie_tak/" + name_of_set + "POP/" + name_of_set + "_" + str(percentage) + "%.txt", "w")
 print('T.shape', T.shape)
 print('percentage_of_set ', percentage_of_set)
 
@@ -149,15 +149,15 @@ def pred_models(models_SVR, models_Tree, models_Forest):
     for model in models_SVR:
         model.info()
         model.get_result()
-        write_to_csv(name_of_set + "_SVRlinear_" + str(percentage) + "%.csv", model.result_to_file())
+        write_to_csv("los_ograniczenie_tak/" + name_of_set + "POP/" + name_of_set + "_SVRlinear_" + str(percentage) + "%.csv", model.result_to_file())
     for model in models_Tree:
         model.info()
         model.get_result()
-        write_to_csv(name_of_set + "_DecisionTree_" + str(percentage) + "%.csv", model.result_to_file())
+        write_to_csv("los_ograniczenie_tak/" + name_of_set + "POP/" + name_of_set + "_DecisionTree_" + str(percentage) + "%.csv", model.result_to_file())
     for model in models_Forest:
         model.info()
         model.get_result()
-        write_to_csv(name_of_set + "_RandomForest_" + str(percentage) + "%.csv", model.result_to_file())
+        write_to_csv("los_ograniczenie_tak/" + name_of_set + "POP/" + name_of_set + "_RandomForest_" + str(percentage) + "%.csv", model.result_to_file())
 
 
 def get_sample(X, y, n_split, selector, iter, name_estimator):
@@ -233,4 +233,4 @@ models_Forest = create_models(estimator=estimators[2])
 # del models_SVR[5:480]
 # del models_Forest[5:480]
 pred_models(models_SVR=models_SVR, models_Tree=models_Tree, models_Forest=models_Forest)
-sys.stdout.close()
+# sys.stdout.close()
