@@ -1,0 +1,62 @@
+Colon 24 [0.975, 0.975, 0.975, 0.970833333333333, 0.966666666666666, 0.9625, 0.9625, 0.9625, 0.9625, 0.9625, 0.9625, 0.9625, 0.9625, 0.9625, 0.958333333333333, 0.958333333333333, 0.958333333333333, 0.954166666666666, 0.954166666666666, 0.954166666666666, 0.945833333333333, 0.945833333333333, 0.945833333333333, 0.941666666666666]
+Colon 3 [0.941666666666666, 0.935416666666666, 0.85]
+Wynik f-testu dla Colon: statystyka = 24.16465, p-value = 0.00004635
+Wynik t-testu dla Colon: statystyka = 4.91576, p-value = 0.00004635
+Wynik testu Mann-Whitneya dla Colon: statystyka = 71.50000, p-value = 0.00580485
+Średnia kolumny meanAUC dla Colon: 0.96007
+Średnia kolumny mean_single_kNN_AUC dla Colon: 0.90903
+Odchylenie standardowe kolumny meanAUC dla Colon: 0.00899
+Odchylenie standardowe kolumny mean_single_kNN_AUC dla Colon: 0.04182
+Mediana dla kolumny meanAUC dla Colon: 0.96250
+Mediana dla kolumny mean_single_kNN_AUC dla Colon: 0.93542
+
+
+Prostate 24 [0.991666666666666, 0.990625, 0.990625, 0.990625, 0.989583333333333, 0.989583333333333, 0.989583333333333, 0.988541666666666, 0.9875, 0.9875, 0.986458333333333, 0.985416666666666, 0.983333333333333, 0.983333333333333, 0.98125, 0.98125, 0.98125, 0.98125, 0.98125, 0.98125, 0.98125, 0.979166666666666, 0.967857142857142, 0.965773809523809]
+Prostate 3 [0.9875, 0.983333333333333, 0.928422619047619]
+Wynik f-testu dla Prostate: statystyka = 6.47504, p-value = 0.01749326
+Wynik t-testu dla Prostate: statystyka = 2.54461, p-value = 0.01749326
+Wynik testu Mann-Whitneya dla Prostate: statystyka = 46.00000, p-value = 0.45861435
+Średnia kolumny meanAUC dla Prostate: 0.98400
+Średnia kolumny mean_single_kNN_AUC dla Prostate: 0.96642
+Odchylenie standardowe kolumny meanAUC dla Prostate: 0.00648
+Odchylenie standardowe kolumny mean_single_kNN_AUC dla Prostate: 0.02692
+Mediana dla kolumny meanAUC dla Prostate: 0.98437
+Mediana dla kolumny mean_single_kNN_AUC dla Prostate: 0.98333
+
+Leukemia 24 [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
+Leukemia 3 [1.0, 1.0, 0.98]
+Wynik f-testu dla Leukemia: statystyka = 11.11111, p-value = 0.00267517
+Wynik t-testu dla Leukemia: statystyka = 3.33333, p-value = 0.00267517
+Wynik testu Mann-Whitneya dla Leukemia: statystyka = 48.00000, p-value = 0.00671665
+Średnia kolumny meanAUC dla Leukemia: 1.00000
+Średnia kolumny mean_single_kNN_AUC dla Leukemia: 0.99333
+Odchylenie standardowe kolumny meanAUC dla Leukemia: 0.00000
+Odchylenie standardowe kolumny mean_single_kNN_AUC dla Leukemia: 0.00943
+Mediana dla kolumny meanAUC dla Leukemia: 1.00000
+Mediana dla kolumny mean_single_kNN_AUC dla Leukemia: 1.00000
+
+Ovarian 24 [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
+Ovarian 3 [1.0, 1.0, 0.999652777777777]
+Wynik f-testu dla Ovarian: statystyka = 11.11111, p-value = 0.00267517
+Wynik t-testu dla Ovarian: statystyka = 3.33333, p-value = 0.00267517
+Wynik testu Mann-Whitneya dla Ovarian: statystyka = 48.00000, p-value = 0.00671665
+Średnia kolumny meanAUC dla Ovarian: 1.00000
+Średnia kolumny mean_single_kNN_AUC dla Ovarian: 0.99988
+Odchylenie standardowe kolumny meanAUC dla Ovarian: 0.00000
+Odchylenie standardowe kolumny mean_single_kNN_AUC dla Ovarian: 0.00016
+Mediana dla kolumny meanAUC dla Ovarian: 1.00000
+Mediana dla kolumny mean_single_kNN_AUC dla Ovarian: 1.00000
+
+Lymphoma 24 [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
+Lymphoma 3 [1.0, 1.0, 1.0]
+C:\Users\pavve\AppData\Local\Programs\Python\Python39\lib\site-packages\scipy\stats\stats.py:3650: F_onewayConstantInputWarning: Each of the input arrays is constant;the F statistic is not defined or infinite
+  warnings.warn(F_onewayConstantInputWarning())
+Wynik f-testu dla Lymphoma: statystyka = nan, p-value = nan
+Wynik t-testu dla Lymphoma: statystyka = nan, p-value = nan
+Wynik testu Mann-Whitneya dla Lymphoma: statystyka = 36.00000, p-value = 1.00000000
+Średnia kolumny meanAUC dla Lymphoma: 1.00000
+Średnia kolumny mean_single_kNN_AUC dla Lymphoma: 1.00000
+Odchylenie standardowe kolumny meanAUC dla Lymphoma: 0.00000
+Odchylenie standardowe kolumny mean_single_kNN_AUC dla Lymphoma: 0.00000
+Mediana dla kolumny meanAUC dla Lymphoma: 1.00000
+Mediana dla kolumny mean_single_kNN_AUC dla Lymphoma: 1.00000

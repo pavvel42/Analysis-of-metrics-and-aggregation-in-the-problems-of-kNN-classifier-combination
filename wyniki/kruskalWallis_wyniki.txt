@@ -1,0 +1,12 @@
+neighbors = 3, folds = 2: stat = 0.9110390928232638, p_value = 0.9229717672703077
+neighbors = 3, folds = 5: stat = 0.6579641399362308, p_value = 0.9564098143393579
+neighbors = 3, folds = 10: stat = 0.99310703769236, p_value = 0.9108393804684054
+neighbors = 3, folds = 20: stat = 0.748467803160972, p_value = 0.9452200814105959
+neighbors = 5, folds = 2: stat = 0.7692334008139972, p_value = 0.9425245147259921
+neighbors = 5, folds = 5: stat = 0.554786495916207, p_value = 0.9679529758081116
+neighbors = 5, folds = 10: stat = 0.14206545725141917, p_value = 0.9975935215370062
+neighbors = 5, folds = 20: stat = 0.8697358399434997, p_value = 0.9288619825366565
+neighbors = 7, folds = 2: stat = 0.6364000865309969, p_value = 0.9589341796552591
+neighbors = 7, folds = 5: stat = 0.6437532961785599, p_value = 0.958079788393555
+neighbors = 7, folds = 10: stat = 2.2597661421775217, p_value = 0.6881035187438781
+neighbors = 7, folds = 20: stat = 1.0106039405513727, p_value = 0.9081838458253724
